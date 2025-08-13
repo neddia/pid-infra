@@ -1,0 +1,3 @@
+seed/site.env
+infra/.env
+*.log
