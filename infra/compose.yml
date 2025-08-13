@@ -23,39 +23,52 @@ services:
       POSTGRES_DB: chirpstack
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chirp -d chirpstack -h 127.0.0.1 -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
 
   chirpstack:
     image: chirpstack/chirpstack:4
     container_name: chirpstack
-    depends_on: [ chirpstack-postgres, mosquitto ]
     restart: unless-stopped
-    environment:
-      CS_POSTGRES_DSN: "postgres://chirp:${CHIRPSTACK_PG_PASS}@chirpstack-postgres:5432/chirpstack?sslmode=disable"
-      CS_MQTT_SERVER: "tcp://mosquitto:1883"
+    # EITHER keep these env overrides OR rely on your TOML in ./chirpstack (recommended: TOML only)
+    # environment:
+    #   CS_POSTGRES_DSN: "postgres://chirp:${CHIRPSTACK_PG_PASS}@chirpstack-postgres:5432/chirpstack?sslmode=disable"
+    #   CS_MQTT_SERVER: "tcp://mosquitto:1883"
     volumes:
       - ./chirpstack:/etc/chirpstack
     ports:
       - "8080:8080"
+    depends_on:
+      chirpstack-postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/"]
       interval: 10s
-      timeout: 3s
-      retries: 6
+      timeout: 5s
+      retries: 12
 
   chirpstack-rest:
-    image: brocaar/chirpstack-rest-api:latest
+    image: chirpstack/chirpstack-rest-api:4
     container_name: chirpstack-rest
-    depends_on: [ chirpstack ]
     restart: unless-stopped
     environment:
+      # REST proxy -> ChirpStack’s HTTP API in the chirpstack container
       CHIRPSTACK_API: "chirpstack:8080"
     ports:
       - "8090:8090"
+    depends_on:
+      chirpstack:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8090/"]
       interval: 10s
-      timeout: 3s
-      retries: 6
+      timeout: 5s
+      retries: 12
 
   influxdb:
     image: influxdb:2.7
@@ -68,8 +81,8 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8086/health"]
       interval: 10s
-      timeout: 3s
-      retries: 6
+      timeout: 5s
+      retries: 12
 
 volumes:
   pgdata:
