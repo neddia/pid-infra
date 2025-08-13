@@ -1,0 +1,13 @@
+[Unit]
+Description=First boot provisioning (seed)
+After=network-online.target
+Wants=network-online.target
+ConditionFirstBoot=yes
+
+[Service]
+Type=oneshot
+ExecStart=/opt/pid-infra/scripts/firstboot-provision.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

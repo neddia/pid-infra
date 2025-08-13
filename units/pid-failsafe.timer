@@ -1,0 +1,9 @@
+[Unit]
+Description=Run PID failsafe 10 min after boot
+
+[Timer]
+OnBootSec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

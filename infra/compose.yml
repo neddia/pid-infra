@@ -1,0 +1,76 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    restart: unless-stopped
+    volumes:
+      - ./mosquitto:/mosquitto
+    ports:
+      - "1883:1883"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/1883'"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+
+  chirpstack-postgres:
+    image: postgres:16
+    container_name: chirpstack-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: chirp
+      POSTGRES_PASSWORD: ${CHIRPSTACK_PG_PASS}
+      POSTGRES_DB: chirpstack
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  chirpstack:
+    image: chirpstack/chirpstack:4
+    container_name: chirpstack
+    depends_on: [ chirpstack-postgres, mosquitto ]
+    restart: unless-stopped
+    environment:
+      CS_POSTGRES_DSN: "postgres://chirp:${CHIRPSTACK_PG_PASS}@chirpstack-postgres:5432/chirpstack?sslmode=disable"
+      CS_MQTT_SERVER: "tcp://mosquitto:1883"
+    volumes:
+      - ./chirpstack:/etc/chirpstack
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+
+  chirpstack-rest:
+    image: brocaar/chirpstack-rest-api:latest
+    container_name: chirpstack-rest
+    depends_on: [ chirpstack ]
+    restart: unless-stopped
+    environment:
+      CHIRPSTACK_API: "chirpstack:8080"
+    ports:
+      - "8090:8090"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8090/"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
+    restart: unless-stopped
+    volumes:
+      - influx2:/var/lib/influxdb2
+    ports:
+      - "8086:8086"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8086/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+
+volumes:
+  pgdata:
+  influx2:

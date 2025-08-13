@@ -1,0 +1,14 @@
+# pid-infra
+
+Bootstrap & infra for edge nodes:
+- First-boot provisioner (Tailscale, UFW, Docker, infra compose)
+- Safe Tailscale bring-up with retries & failsafe (no lock-outs)
+- InfluxDB + ChirpStack + Mosquitto + Postgres via Docker Compose
+- One-time initializers to mint site-scoped tokens/keys
+- Self-test suite (writes JSON + optional Influx rollup)
+- Edge agent to deploy your app repo (venv per release, symlink swap)
+
+## Quick start (USB copy)
+1. Put this folder on your installer USB as `/pid-infra/`.
+2. Also add a per-site config at `/pid-infra/seed/site.env` (see `seed/site.env.example`).
+3. In `autoinstall.yaml` **late-commands**, copy the folder to the target:

@@ -1,0 +1,11 @@
+[Unit]
+Description=Run PID Edge Agent periodically
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=45min
+RandomizedDelaySec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
